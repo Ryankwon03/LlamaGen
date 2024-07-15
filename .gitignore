@@ -164,3 +164,4 @@ cython_debug/
 
 #내꺼
 pretrained_models/
+data/
