@@ -163,4 +163,7 @@ cython_debug/
 
 
 #내꺼
-pretrained_models/
+#pretrained_models/
+
+vq_ds8_c2i.pt
+vq_ds16_c2i.pt
