@@ -5,6 +5,12 @@ import numpy as np
 from PIL import Image
 from diffusers.models import AutoencoderKL
 
+import os
+import sys
+
+target_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+print(target_path)
+sys.path.append(target_path)
 
 def main(args):
     # Setup PyTorch:
