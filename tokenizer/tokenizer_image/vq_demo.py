@@ -77,7 +77,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image-path", type=str, default="assets/teaser.jpg")
+    parser.add_argument("--image-path", type=str, default="~/assets/teaser.jpg")
     parser.add_argument("--output-dir", type=str, default="output_vq_demo")
     parser.add_argument("--suffix", type=str, default="tokenizer_image")
     parser.add_argument("--vq-model", type=str, choices=list(VQ_models.keys()), default="VQ-16")
