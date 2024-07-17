@@ -7,8 +7,9 @@ import numpy as np
 from PIL import Image
 
 import sys
-#sys.path.append("/Users/ryankwon03/Documents/GitHub/LlamaGen")
-sys.path.append("C:/Users/user/Documents/GitHub/LlamaGen")
+
+target_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(target_path)
 
 from tokenizer.tokenizer_image.vq_model import VQ_models
 from dataset.augmentation import center_crop_arr
