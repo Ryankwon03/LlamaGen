@@ -55,7 +55,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image-path", type=str, default="~/assets/racoon.jpg")
+    parser.add_argument("--image-path", type=str, default="assets/racoon.jpg")
     parser.add_argument("--vae", type=str, choices=["sdxl-vae", "sd-vae-ft-mse"], default="sd-vae-ft-mse")
     parser.add_argument("--image-size", type=int, choices=[256, 512, 1024], default=512)
     parser.add_argument("--seed", type=int, default=0)
