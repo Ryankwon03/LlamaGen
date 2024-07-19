@@ -1,0 +1,78 @@
+base: 128
+layers:
+  0: {}
+  1:
+    downsize:
+      model: crop
+      params:
+        always_apply: true
+    multi_ops:
+    - model: gauss_noise
+      params:
+        always_apply: true
+    single_ops:
+    - model: horizontal_flip
+      params:
+        always_apply: true
+  2:
+    downsize:
+      model: crop
+      params:
+        always_apply: true
+    multi_ops:
+    - model: gauss_noise
+      params:
+        always_apply: true
+    single_ops:
+    - model: rotate
+      params:
+        always_apply: true
+  3:
+    downsize:
+      model: crop
+      params:
+        always_apply: true
+    multi_ops:
+    - model: gauss_noise
+      params:
+        always_apply: true
+    single_ops:
+    - model: grayscale
+      params:
+        always_apply: true
+  4:
+    downsize:
+      model: crop
+      params:
+        always_apply: true
+    multi_ops:
+    - model: gauss_noise
+      params:
+        always_apply: true
+    single_ops:
+    - model: jitter
+      params:
+        always_apply: true
+  5:
+    downsize:
+      model: crop
+      params:
+        always_apply: true
+    multi_ops:
+    - model: gauss_noise
+      params:
+        always_apply: true
+    single_ops:
+    - model: gauss_blur
+      params:
+        always_apply: true
+noise:
+  params:
+    always_apply: true
+    image_shape:
+    - 256
+    - 256
+    - 3
+    mean: 0
+    select: 0
+    var_limit: 10000
