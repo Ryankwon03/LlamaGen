@@ -50,6 +50,7 @@ def main(args):
     
     # Setup DDP: multiple GPU Training을 위한 data parallelism
     init_distributed_mode(args)
+    
     assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
