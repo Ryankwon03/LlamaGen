@@ -277,7 +277,7 @@ def main(args):
     logger.info("Done!")
     dist.destroy_process_group()
 
-
+#python vq_train.py --data-path='E:\ILSVRC2012_img_train' --cloud-save-path='E:\SAVE_PATH'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
