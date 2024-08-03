@@ -78,12 +78,11 @@ def main(args):
 
     print("FINISHED SETUP")
 
-    for data, _ in train_loader:
-        img = data[0]
-        print(img.shape)
-        break;
+    #for data, _ in train_loader:
+    #    img = data[0]
+    #    print(img.shape)
+    #    break;
 
-    quit()
 
     ########################################################################
     # Training
@@ -147,7 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--beta1", type=float, default=0.9, help="The beta1 parameter for the Adam optimizer.")
     parser.add_argument("--beta2", type=float, default=0.95, help="The beta2 parameter for the Adam optimizer.")
-    parser.add_argument("--global-batch-size", type=int, default=128)
+    parser.add_argument("--global-batch-size", type=int, default=4)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--num-workers", type=int, default=4)
 
