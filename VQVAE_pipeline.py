@@ -66,7 +66,7 @@ def main(args):
     #temp_path, _ = dataset.imgs[0] #sets image path
     #Image.open(temp_path).show() #prints image
 
-    loader = DataLoader(
+    train_loader = DataLoader(
         dataset,
         batch_size=args.global_batch_size,
         shuffle=False,
@@ -80,18 +80,40 @@ def main(args):
         vq_model, vq_loss, optimizer, optimizer_disc, train_loader
     )
 
+    print("FINISHED SETUP")
+
     ########################################################################
-    # Define loop
+    # Training
     ########################################################################
 
     for epoch in range(args.epochs):
-        for batch in loader:
+        for batch in train_loader:
             imgs, _ = batch
             imgs = imgs.to(device, non_blocking=True)
+            #generator training
             optimizer.zero_grad()
-            
+            with accelerator.autocast():
+                recons_imgs, codebook_loss = vq_model(imgs)
+                loss_gen = vq_loss(
+                    codebook_loss, imgs, recons_imgs, optimizer_idx=0, global_step=0, 
+                    last_layer=vq_model.module.decoder.last_layer, 
+                    logger=None, log_every=args.log_every
+                )
+            accelerator.backward(loss_gen)
+            optimizer.step()
 
-
+            #discriminator training
+            optimizer_disc.zero_grad()
+            with accelerator.autocast():
+                loss_disc = vq_loss(
+                    codebook_loss, imgs, recons_imgs, optimizer_idx=1, global_step=0,
+                    logger=None, log_every=args.log_every
+                )
+            accelerator.backward(loss_disc)
+            optimizer_disc.step()
+            if (epoch * len(train_loader) + batch) % args.log_every == 0:
+                    print(f"Epoch [{epoch}/{args.epochs}], Step [{batch}/{len(train_loader)}], "
+                        f"Loss Gen: {loss_gen.item()}, Loss Disc: {loss_disc.item()}")
 
     print("End of training")
 
