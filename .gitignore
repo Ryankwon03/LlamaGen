@@ -167,4 +167,3 @@ cython_debug/
 
 vq_ds8_c2i.pt
 vq_ds16_c2i.pt
-VQVAE_pipeline.py
