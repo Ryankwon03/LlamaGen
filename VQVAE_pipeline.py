@@ -60,19 +60,12 @@ def main(args):
     print("now loading dataset")
     dataset = build_dataset(args, transform=transform)
     print("dataset loaded")
-    #testing purposes
 
     temp_loader = DataLoader(
         dataset,
         batch_size=16
     )
 
-    for data, _ in temp_loader:
-        img = data[1]
-        print(img.shape)
-        break
-    
-    quit()
 
     train_loader = DataLoader(
         dataset,
@@ -82,6 +75,8 @@ def main(args):
         pin_memory=True,
         drop_last=True
     )
+
+    quit()
 
 
     vq_model, vq_loss, optimizer, optimizer_disc, train_loader = accelerator.prepare(
