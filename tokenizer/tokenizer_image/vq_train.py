@@ -282,9 +282,9 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-path", type=str, default = 'E:\ILSVRC2012_img_train', help="path to the training data")
+    parser.add_argument("--data-path", type=str, default = 'E:\ILSVRC2012_img_train', help="path to the training data") #required=True
     parser.add_argument("--data-face-path", type=str, default=None, help="face datasets to improve vq model")
-    parser.add_argument("--cloud-save-path", type=str, default = 'E:\SAVE_PATH', help='please specify a cloud disk path, if not, local path')
+    parser.add_argument("--cloud-save-path", type=str, default = 'E:\SAVE_PATH', help='please specify a cloud disk path, if not, local path') #required=True
     parser.add_argument("--no-local-save", action='store_true', help='no save checkpoints to local path for limited disk volume')
     parser.add_argument("--vq-model", type=str, choices=list(VQ_models.keys()), default="VQ-16")
     parser.add_argument("--vq-ckpt", type=str, default=None, help="ckpt path for resume training")
