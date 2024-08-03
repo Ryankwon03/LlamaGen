@@ -19,8 +19,6 @@ from dataset.build import build_dataset
 
 from PIL import Image
 import argparse
-import os
-import time
 
 
 def main(args): 
@@ -54,7 +52,7 @@ def main(args):
     optimizer_disc = torch.optim.Adam(vq_loss.discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
 
     transform = transforms.Compose([
-        transforms.Lambda(lambda pil_image: random_crop_arr(pil_image, args.image_size)), #얘네가 직접 만든 random_crop_arr 함수
+        transforms.Lambda(lambda pil_image: random_crop_arr(pil_image, 512)), #얘네가 직접 만든 random_crop_arr 함수
         transforms.RandomHorizontalFlip(), #transforms 라이브러리에 있는 함수
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
@@ -63,14 +61,19 @@ def main(args):
     dataset = build_dataset(args, transform=transform)
     print("dataset loaded")
     #testing purposes
-    #temp_path, _ = dataset.imgs[0] #sets image path
-    #Image.open(temp_path).show() #prints image
-
+    for i in range(10):
+        temp_path, label = dataset.imgs[i] #sets image path
+        img = Image.open(temp_path) #prints image
+        print(label)
+        print(img.size)
+        print(random_crop_arr(img, args.image_size).size)
+    
+    quit()
     train_loader = DataLoader(
         dataset,
         batch_size=args.global_batch_size,
         shuffle=False,
-        num_workers=4, #args.num_workers
+        num_workers=args.num_workers, 
         pin_memory=True,
         drop_last=True
     )
@@ -111,9 +114,8 @@ def main(args):
                 )
             accelerator.backward(loss_disc)
             optimizer_disc.step()
-            if (epoch * len(train_loader) + batch) % args.log_every == 0:
-                    print(f"Epoch [{epoch}/{args.epochs}], Step [{batch}/{len(train_loader)}], "
-                        f"Loss Gen: {loss_gen.item()}, Loss Disc: {loss_disc.item()}")
+            
+            print("loop finished")
 
     print("End of training")
 
@@ -147,6 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--beta2", type=float, default=0.95, help="The beta2 parameter for the Adam optimizer.")
     parser.add_argument("--global-batch-size", type=int, default=128)
     parser.add_argument("--global-seed", type=int, default=0)
+    parser.add_argument("--num-workers", type=int, default=4)
 
     #Dataset
     parser.add_argument("--dataset", type=str, default='imagenet')

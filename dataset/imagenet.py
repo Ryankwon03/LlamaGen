@@ -51,7 +51,8 @@ class CustomDataset(Dataset):
 
 
 def build_imagenet(args, transform):
-    return ImageFolder(args.data_path, transform=transform)
+    return ImageFolder(root=args.data_path,
+                       transform=transform)
 
 def build_imagenet_code(args):
     feature_dir = f"{args.code_path}/imagenet{args.image_size}_codes"
