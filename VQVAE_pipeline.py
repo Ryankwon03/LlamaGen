@@ -58,17 +58,17 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
     print("now loading dataset")
-
     dataset = build_dataset(args, transform=transform)
-
     print("dataset loaded")
+    #temp_path, _ = dataset.imgs[0] #sets image path
+    #Image.open(temp_path).show() #prints image
 
-    temp_path, _ = dataset.imgs[0] #sets image path
-    Image.open(temp_path).show() #prints image
+    
+    vq_model.train()
+    vq_loss.train()
 
 
-
-    print("hello world")
+    print("End of training")
 
 
 if __name__ == "__main__":
