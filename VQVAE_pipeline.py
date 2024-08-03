@@ -2,6 +2,7 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+from torch.utils.data import Dataset, DataLoader
 
 from torchvision import transforms
 
@@ -63,9 +64,16 @@ def main(args):
     #temp_path, _ = dataset.imgs[0] #sets image path
     #Image.open(temp_path).show() #prints image
 
-    
     vq_model.train()
     vq_loss.train()
+
+    ########################################################################
+    # Define loop
+    ########################################################################
+
+    for epoch in range(args.epochs):
+        #for batch in dataloader:
+            #asdf
 
 
     print("End of training")
