@@ -61,22 +61,15 @@ def main(args):
     dataset = build_dataset(args, transform=transform)
     print("dataset loaded")
 
-    temp_loader = DataLoader(
-        dataset,
-        batch_size=16
-    )
-
 
     train_loader = DataLoader(
         dataset,
         batch_size=args.global_batch_size,
-        shuffle=False,
-        num_workers=args.num_workers, 
+        shuffle = True,
+        #num_workers=args.num_workers, #여기에서 에러
         pin_memory=True,
         drop_last=True
     )
-
-    quit()
 
 
     vq_model, vq_loss, optimizer, optimizer_disc, train_loader = accelerator.prepare(
@@ -84,6 +77,13 @@ def main(args):
     )
 
     print("FINISHED SETUP")
+
+    for data, _ in train_loader:
+        img = data[0]
+        print(img.shape)
+        break;
+
+    quit()
 
     ########################################################################
     # Training
