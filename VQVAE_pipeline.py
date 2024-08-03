@@ -67,8 +67,9 @@ def main(args):
         batch_size=16
     )
 
-    for i, data in temp_loader:
-        print(data.shape)
+    for data, _ in temp_loader:
+        img = data[1]
+        print(img.shape)
         break
     
     quit()
