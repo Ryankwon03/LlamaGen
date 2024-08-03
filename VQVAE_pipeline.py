@@ -61,14 +61,18 @@ def main(args):
     dataset = build_dataset(args, transform=transform)
     print("dataset loaded")
     #testing purposes
-    for i in range(10):
-        temp_path, label = dataset.imgs[i] #sets image path
-        img = Image.open(temp_path) #prints image
-        print(label)
-        print(img.size)
-        print(random_crop_arr(img, args.image_size).size)
+
+    temp_loader = DataLoader(
+        dataset,
+        batch_size=16
+    )
+
+    for i, data in temp_loader:
+        print(data.shape)
+        break
     
     quit()
+
     train_loader = DataLoader(
         dataset,
         batch_size=args.global_batch_size,
