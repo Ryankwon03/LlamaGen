@@ -48,15 +48,21 @@ def main(args):
     """
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
     
-    # Setup DDP: multiple GPU Training을 위한 data parallelism
-    init_distributed_mode(args)
-    
-    assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
-    rank = dist.get_rank()
-    device = rank % torch.cuda.device_count()
-    seed = args.global_seed * dist.get_world_size() + rank
-    torch.manual_seed(seed)
-    torch.cuda.set_device(device)
+    if args.distributed:
+        # Setup DDP: multiple GPU Training을 위한 data parallelism
+        init_distributed_mode(args)
+
+        assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
+        rank = dist.get_rank()
+        device = rank % torch.cuda.device_count()
+        seed = args.global_seed * dist.get_world_size() + rank
+        torch.manual_seed(seed)
+        torch.cuda.set_device(device)
+
+    else:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.manual_seed(args.global_seed)
+        rank = 0
 
     # Setup an experiment folder:
     if rank == 0:
