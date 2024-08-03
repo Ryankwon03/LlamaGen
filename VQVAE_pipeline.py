@@ -2,10 +2,19 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+
+from torchvision import transforms
+
 from tokenizer.tokenizer_image.vq_model import VQ_models
 from tokenizer.tokenizer_image.vq_loss import VQLoss
 
+from utils.logger import create_logger
+from utils.distributed import init_distributed_mode
+from utils.ema import update_ema, requires_grad
+from dataset.augmentation import random_crop_arr
+from dataset.build import build_dataset
 
+from PIL import Image
 import argparse
 import os
 import time
@@ -36,6 +45,29 @@ def main(args):
         codebook_weight=args.codebook_weight,  
     ).to(device)
 
+    scaler = torch.cuda.amp.GradScaler(enabled=(args.mixed_precision =='fp16'))
+    scaler_disc = torch.cuda.amp.GradScaler(enabled=(args.mixed_precision =='fp16'))
+
+    optimizer = torch.optim.Adam(vq_model.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
+    optimizer_disc = torch.optim.Adam(vq_loss.discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
+
+    transform = transforms.Compose([
+        transforms.Lambda(lambda pil_image: random_crop_arr(pil_image, args.image_size)), #얘네가 직접 만든 random_crop_arr 함수
+        transforms.RandomHorizontalFlip(), #transforms 라이브러리에 있는 함수
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
+    ])
+    print("now loading dataset")
+
+    dataset = build_dataset(args, transform=transform)
+
+    print("dataset loaded")
+
+    temp_path, _ = dataset.imgs[0] #sets image path
+    Image.open(temp_path).show() #prints image
+
+
+
     print("hello world")
 
 
@@ -61,10 +93,21 @@ if __name__ == "__main__":
     parser.add_argument("--reconstruction-loss", type=str, default='l2', help="reconstruction loss type of image pixel")
     parser.add_argument("--codebook-weight", type=float, default=1.0, help="codebook loss weight for vector quantization")
     
-    
     #Training
     parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--beta1", type=float, default=0.9, help="The beta1 parameter for the Adam optimizer.")
+    parser.add_argument("--beta2", type=float, default=0.95, help="The beta2 parameter for the Adam optimizer.")
+    parser.add_argument("--global-batch-size", type=int, default=128)
+    parser.add_argument("--global-seed", type=int, default=0)
+
+    #Dataset
+    parser.add_argument("--dataset", type=str, default='imagenet')
+    parser.add_argument("--data-path", type=str, default='E:\imagenet1k_train') #required=True
+   
+
+    #etc
+    parser.add_argument("--mixed-precision", type=str, default='bf16', choices=["none", "fp16", "bf16"]) 
 
 
     args = parser.parse_args()
