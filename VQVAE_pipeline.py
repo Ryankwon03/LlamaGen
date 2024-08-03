@@ -76,6 +76,7 @@ def main(args):
         vq_model, vq_loss, optimizer, optimizer_disc, train_loader
     )
 
+
     print("FINISHED SETUP")
 
     #for data, _ in train_loader:
@@ -146,7 +147,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--beta1", type=float, default=0.9, help="The beta1 parameter for the Adam optimizer.")
     parser.add_argument("--beta2", type=float, default=0.95, help="The beta2 parameter for the Adam optimizer.")
-    parser.add_argument("--global-batch-size", type=int, default=4)
+    parser.add_argument("--global-batch-size", type=int, default=2)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--num-workers", type=int, default=4)
 
