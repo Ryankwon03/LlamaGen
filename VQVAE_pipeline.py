@@ -6,6 +6,8 @@ from torch.utils.data import Dataset, DataLoader
 
 from torchvision import transforms
 
+from accelerate import Accelerator
+
 from tokenizer.tokenizer_image.vq_model import VQ_models
 from tokenizer.tokenizer_image.vq_loss import VQLoss
 
@@ -25,13 +27,15 @@ def main(args):
     # Hyperparameters
     device = torch.device("cuda")
 
+    accelerator = Accelerator(mixed_precision=args.mixed_precision)
+
     vq_model = VQ_models[args.vq_model](
         codebook_size=args.codebook_size,
         codebook_embed_dim=args.codebook_embed_dim,
         commit_loss_beta=args.commit_loss_beta,
         entropy_loss_ratio=args.entropy_loss_ratio,
         dropout_p=args.dropout_p,
-    )
+    ).to(device)
 
     vq_loss = VQLoss(
         disc_start=args.disc_start, 
@@ -46,9 +50,6 @@ def main(args):
         codebook_weight=args.codebook_weight,  
     ).to(device)
 
-    scaler = torch.cuda.amp.GradScaler(enabled=(args.mixed_precision =='fp16'))
-    scaler_disc = torch.cuda.amp.GradScaler(enabled=(args.mixed_precision =='fp16'))
-
     optimizer = torch.optim.Adam(vq_model.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
     optimizer_disc = torch.optim.Adam(vq_loss.discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
 
@@ -61,10 +62,11 @@ def main(args):
     print("now loading dataset")
     dataset = build_dataset(args, transform=transform)
     print("dataset loaded")
+    #testing purposes
     #temp_path, _ = dataset.imgs[0] #sets image path
     #Image.open(temp_path).show() #prints image
 
-    dataloader = DataLoader(
+    loader = DataLoader(
         dataset,
         batch_size=args.global_batch_size,
         shuffle=False,
@@ -74,17 +76,21 @@ def main(args):
     )
 
 
-
-    vq_model.train()
-    vq_loss.train()
+    vq_model, vq_loss, optimizer, optimizer_disc, train_loader = accelerator.prepare(
+        vq_model, vq_loss, optimizer, optimizer_disc, train_loader
+    )
 
     ########################################################################
     # Define loop
     ########################################################################
 
     for epoch in range(args.epochs):
-        for batch in dataloader:
-            print('asdf')
+        for batch in loader:
+            imgs, _ = batch
+            imgs = imgs.to(device, non_blocking=True)
+            optimizer.zero_grad()
+            
+
 
 
     print("End of training")
