@@ -80,7 +80,6 @@ def main(args):
         cloud_checkpoint_dir = f"{cloud_results_dir}/{experiment_index:03d}-{model_string_name}/checkpoints"
         os.makedirs(cloud_checkpoint_dir, exist_ok=True)
         logger.info(f"Experiment directory created in cloud at {cloud_checkpoint_dir}")
-    
     else:
         logger = create_logger(None)
 
@@ -88,7 +87,10 @@ def main(args):
     logger.info(f"{args}")
 
     # training env
-    logger.info(f"Starting rank={rank}, seed={seed}, world_size={dist.get_world_size()}.")
+    if args.distributed:
+        logger.info(f"Starting rank={rank}, seed={seed}, world_size={dist.get_world_size()}.")
+    else:
+        logger.info(f"Starting on single GPU/CPU with seed={args.global_seed}.")
 
     # create and load model --> 내가 args에 지정한 모델을 불러온다.
     vq_model = VQ_models[args.vq_model](
@@ -134,13 +136,19 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
     dataset = build_dataset(args, transform=transform) #위의 정보들로 dataset 만들기
-    sampler = DistributedSampler(
-        dataset,
-        num_replicas=dist.get_world_size(),
-        rank=rank,
-        shuffle=True,
-        seed=args.global_seed
-    )
+
+    if args.distributed:
+        sampler = DistributedSampler(
+            dataset,
+            num_replicas=dist.get_world_size(),
+            rank=rank,
+            shuffle=True,
+            seed=args.global_seed
+        )
+    else:
+        sampler = None
+        shuffle = True
+
     loader = DataLoader(
         dataset,
         batch_size=int(args.global_batch_size // dist.get_world_size()),
@@ -182,11 +190,14 @@ def main(args):
         logger.info("compiling the model... (may take several minutes)")
         vq_model = torch.compile(vq_model) # requires PyTorch 2.0        
     
-    vq_model = DDP(vq_model.to(device), device_ids=[args.gpu])
+    if args.distributed:
+        vq_model = DDP(vq_model.to(device), device_ids=[args.gpu])
+        vq_loss = DDP(vq_loss.to(device), device_ids=[args.gpu])
+    
     vq_model.train()
     if args.ema:
         ema.eval()  # EMA model should always be in eval mode
-    vq_loss = DDP(vq_loss.to(device), device_ids=[args.gpu])
+    
     vq_loss.train()
 
     ptdtype = {'none': torch.float32, 'bf16': torch.bfloat16, 'fp16': torch.float16}[args.mixed_precision]
@@ -197,8 +208,10 @@ def main(args):
     start_time = time.time()
 
     logger.info(f"Training for {args.epochs} epochs...")
+
     for epoch in range(start_epoch, args.epochs):
-        sampler.set_epoch(epoch)
+        if args.distributed:
+            sampler.set_epoch(epoch)
         logger.info(f"Beginning epoch {epoch}...")
         for x, y in loader:
             imgs = x.to(device, non_blocking=True)
@@ -208,12 +221,12 @@ def main(args):
             with torch.cuda.amp.autocast(dtype=ptdtype):  
                 recons_imgs, codebook_loss = vq_model(imgs)
                 loss_gen = vq_loss(codebook_loss, imgs, recons_imgs, optimizer_idx=0, global_step=train_steps+1, 
-                                   last_layer=vq_model.module.decoder.last_layer, 
+                                   last_layer=vq_model.module.decoder.last_layer if args.distributed else vq_model.decoder.last_layer, 
                                    logger=logger, log_every=args.log_every)
             scaler.scale(loss_gen).backward()
             if args.max_grad_norm != 0.0:
                 scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(vq_model.parameters(), args.max_grad_norm)
+                torch.nn.utils.clip_grad_norm_(vq_loss.module.discriminator.parameters() if args.distributed else vq_loss.discriminator.parameters(), args.max_grad_norm)
             scaler.step(optimizer)
             scaler.update()
             if args.ema:
@@ -243,7 +256,8 @@ def main(args):
                 steps_per_sec = log_steps / (end_time - start_time)
                 # Reduce loss history over all processes:
                 avg_loss = torch.tensor(running_loss / log_steps, device=device)
-                dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
+                if args.distributed:
+                        dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
                 avg_loss = avg_loss.item() / dist.get_world_size()
                 logger.info(f"(step={train_steps:07d}) Train Loss: {avg_loss:.4f}, Train Steps/Sec: {steps_per_sec:.2f}")
                 # Reset monitoring variables:
@@ -255,9 +269,9 @@ def main(args):
             if train_steps % args.ckpt_every == 0 and train_steps > 0:
                 if rank == 0:
                     if args.compile:
-                        model_weight = vq_model.module._orig_mod.state_dict()
+                        model_weight = vq_model.module._orig_mod.state_dict() if args.distributed else vq_model._orig_mod.state_dict()
                     else:
-                        model_weight = vq_model.module.state_dict()  
+                        model_weight = vq_model.module.state_dict() if args.distributed else vq_model.state_dict()
                     checkpoint = {
                         "model": model_weight,
                         "optimizer": optimizer.state_dict(),
@@ -276,18 +290,21 @@ def main(args):
                     cloud_checkpoint_path = f"{cloud_checkpoint_dir}/{train_steps:07d}.pt"
                     torch.save(checkpoint, cloud_checkpoint_path)
                     logger.info(f"Saved checkpoint in cloud to {cloud_checkpoint_path}")
-                dist.barrier()
+                if args.distributed:
+                    dist.barrier()
 
     vq_model.eval()  # important! This disables randomized embedding dropout
     # do any sampling/FID calculation/etc. with ema (or model) in eval mode ...
 
     logger.info("Done!")
-    dist.destroy_process_group()
+    if args.distributed:
+        dist.destroy_process_group()
 
 #python vq_train.py --data-path='E:\ILSVRC2012_img_train' --cloud-save-path='E:\SAVE_PATH'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--distributed", type=bool, default = False, help="DDP/Single GPU") #DDP or Single GPU
     parser.add_argument("--data-path", type=str, default = 'E:\ILSVRC2012_img_train', help="path to the training data") #required=True
     parser.add_argument("--data-face-path", type=str, default=None, help="face datasets to improve vq model")
     parser.add_argument("--cloud-save-path", type=str, default = 'E:\SAVE_PATH', help='please specify a cloud disk path, if not, local path') #required=True
