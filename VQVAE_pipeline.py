@@ -64,6 +64,17 @@ def main(args):
     #temp_path, _ = dataset.imgs[0] #sets image path
     #Image.open(temp_path).show() #prints image
 
+    dataloader = DataLoader(
+        dataset,
+        batch_size=args.global_batch_size,
+        shuffle=False,
+        num_workers=4, #args.num_workers
+        pin_memory=True,
+        drop_last=True
+    )
+
+
+
     vq_model.train()
     vq_loss.train()
 
@@ -72,8 +83,8 @@ def main(args):
     ########################################################################
 
     for epoch in range(args.epochs):
-        #for batch in dataloader:
-            #asdf
+        for batch in dataloader:
+            print('asdf')
 
 
     print("End of training")
