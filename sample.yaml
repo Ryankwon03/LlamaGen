@@ -1,4 +1,4 @@
-base: 128
+base: 512
 layers:
   0: {}
   1:
