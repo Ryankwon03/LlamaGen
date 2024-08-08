@@ -1,4 +1,4 @@
-base: 1024
+base: 512
 layers:
   0: {}
   1:
@@ -75,4 +75,4 @@ noise:
     - 3
     mean: 0
     select: 0
-    var_limit: 10000
+    var_limit: 1.0
