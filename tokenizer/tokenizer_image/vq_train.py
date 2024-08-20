@@ -20,7 +20,7 @@ from copy import deepcopy
 
 import sys
 ROOT = os.path.dirname(__file__)
-sys.path.append(f"{ROOT}/../../..")
+sys.path.append(f"{ROOT}/../..")
 
 from utils.logger import create_logger
 from utils.distributed import init_distributed_mode
