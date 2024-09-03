@@ -4,7 +4,7 @@ set -x
 
 # Set default values for single-node training
 nnodes=1                  # number of nodes
-nproc_per_node=1          # number of processes per node
+nproc_per_node=4          # number of processes per node
 node_rank=0               # node rank
 master_addr="localhost"   # address of the master node
 master_port=29500         # port of the master node
